@@ -1,8 +1,8 @@
 # Nixpacks 配置（项目根目录）
-# start cmd 用 npx 跑 pnpm
+# pnpm 11 需要 Node.js 22+
 
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_22"]
 
 [start]
-cmd = "cd server && npx -y pnpm@11.20.0 prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
+cmd = "cd server && pnpm prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
