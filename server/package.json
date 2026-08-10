@@ -4,6 +4,11 @@
   "private": true,
   "description": "鸡尾酒小程序后端 - Express + Prisma + TS",
   "main": "dist/server.js",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=11.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
