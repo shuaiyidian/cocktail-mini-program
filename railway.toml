@@ -1,12 +1,10 @@
 # Railway 部署配置（项目根目录）
-# 用法：直接在 GitHub 关联这个仓库即可，无需设 Root Directory
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd server && corepack enable && pnpm install --frozen-lockfile && pnpm prisma generate --schema=./prisma/schema.postgres.prisma && pnpm build"
+buildCommand = "cd server && pnpm install --frozen-lockfile && pnpm prisma generate --schema=./prisma/schema.postgres.prisma && pnpm build"
 
 [deploy]
-startCommand = "cd server && pnpm prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

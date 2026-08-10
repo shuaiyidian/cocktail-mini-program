@@ -1,0 +1,8 @@
+# Nixpacks 配置（项目根目录）
+# 显式声明 pnpm，让 build 镜像里装上
+
+[phases.setup]
+nixPkgs = ["nodejs-20_x", "nodePackages.pnpm"]
+
+[start]
+cmd = "cd server && pnpm prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
