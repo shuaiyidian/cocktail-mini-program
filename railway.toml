@@ -2,9 +2,12 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd server && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@8.15.9 build"
+# Build 阶段：装依赖 + 生成 prisma client + push schema + 编译
+buildCommand = "cd server && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@8.15.9 prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && npx -y pnpm@8.15.9 build"
 
 [deploy]
+# 启动时只起 node（schema 已在 build 阶段 push）
+startCommand = "cd server && node dist/server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
