@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/postgres"  // 避免与 SQLite 客户端冲突
+  // 不指定 output，使用默认路径（@prisma/client 自动解析）
 }
 
 datasource db {
