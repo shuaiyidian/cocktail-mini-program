@@ -1,8 +1,8 @@
 # Nixpacks 配置（项目根目录）
-# pnpm 通过 build command 装
+# start cmd 用 npx 跑 pnpm
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
 [start]
-cmd = "cd server && pnpm prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
+cmd = "cd server && npx -y pnpm@11.20.0 prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"

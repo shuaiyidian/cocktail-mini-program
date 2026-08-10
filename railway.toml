@@ -2,8 +2,8 @@
 
 [build]
 builder = "NIXPACKS"
-# 用 npm 全局装 pnpm（避免镜像没 pnpm）
-buildCommand = "cd server && npm install -g pnpm@11.20.0 && pnpm install --frozen-lockfile && pnpm prisma generate --schema=./prisma/schema.postgres.prisma && pnpm build"
+# 用 npx 跑 pnpm（npx 知道 npm 全局 bin 路径）
+buildCommand = "cd server && npx -y pnpm@11.20.0 install --frozen-lockfile && npx -y pnpm@11.20.0 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@11.20.0 build"
 
 [deploy]
 healthcheckPath = "/api/health"
