@@ -2,12 +2,11 @@
 
 [build]
 builder = "NIXPACKS"
-# Build 阶段：装依赖 + 生成 prisma client + 编译（DATABASE_URL 不可用）
 buildCommand = "cd server && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@8.15.9 build"
 
 [deploy]
-# Deploy 阶段才有环境变量
-startCommand = "cd server && npx -y pnpm@8.15.9 prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && node dist/server.js"
+# 调试版：加 echo 看是否执行
+startCommand = "echo '=== STARTING ===' && pwd && ls -la && cd server && echo '=== dist ===' && ls -la dist/ && echo '=== pushing schema ===' && npx -y pnpm@8.15.9 prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma && echo '=== starting server ===' && PORT=${PORT:-3000} node dist/server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
