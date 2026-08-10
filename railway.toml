@@ -2,8 +2,7 @@
 
 [build]
 builder = "NIXPACKS"
-# pnpm@9 兼容老版 Node.js（不依赖 styleText）
-buildCommand = "cd server && npx -y pnpm@9.15.4 install --frozen-lockfile && npx -y pnpm@9.15.4 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@9.15.4 build"
+buildCommand = "cd server && npx -y pnpm@9.15.4 install --frozen-lockfile --config.engine-strict=false && npx -y pnpm@9.15.4 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@9.15.4 build --config.engine-strict=false"
 
 [deploy]
 healthcheckPath = "/api/health"
