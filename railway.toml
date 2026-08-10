@@ -2,8 +2,8 @@
 
 [build]
 builder = "NIXPACKS"
-# pnpm@10 兼容 Node 20（pnpm@11 需要 Node 22+ 的 styleText API）
-buildCommand = "cd server && npm install -g pnpm@10 && export PATH=\"$(npm root -g)/../bin:$PATH\" && pnpm install --frozen-lockfile && pnpm prisma generate --schema=./prisma/schema.postgres.prisma && pnpm build"
+# npx pnpm@10 走 npm 的 bin 目录
+buildCommand = "cd server && npx -y pnpm@10 install --frozen-lockfile && npx -y pnpm@10 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@10 build"
 
 [deploy]
 healthcheckPath = "/api/health"
