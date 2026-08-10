@@ -1,0 +1,152 @@
+// Prisma schema - cocktail mini program
+// 开发期用 SQLite（DATABASE_URL=file:./dev.db）
+// 生产环境 Railway 用 PostgreSQL（DATABASE_URL=postgresql://...）
+// 切换方式：改 .env 里的 DATABASE_URL，然后跑 prisma migrate deploy
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // provider 通过环境变量切换（SQLite / PostgreSQL）
+  // Prisma 不支持直接用 env() 选 provider，所以维护两个 schema 变体
+  // 当前默认是 sqlite（开发期）
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 用户
+model User {
+  id              String    @id @default(cuid())
+  openid          String?   @unique
+  unionid         String?
+  nickname        String?
+  avatar          String?
+  /// 会员等级：free / pro / svip
+  memberTier      String    @default("free")
+  /// 会员到期时间
+  memberExpiresAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customCocktails Cocktail[]   @relation("userCocktails")
+  customRecipes   CustomRecipe[]
+  orders          Order[]
+
+  @@map("users")
+}
+
+/// 鸡尾酒（既包含经典预置款，也包含用户自定义）
+model Cocktail {
+  id          String   @id @default(cuid())
+  /// 唯一英文 slug，用于路由和防重复
+  slug        String   @unique
+  /// 中文名
+  name        String
+  /// 英文名
+  nameEn      String?
+  /// 类别：classic / mocktail / custom
+  category    String   @default("classic")
+  /// 杯型
+  glass       String?
+  /// 风味四维（0-10）
+  sweet       Int      @default(5)
+  sour        Int      @default(5)
+  bitter      Int      @default(5)
+  strong      Int      @default(5)
+  /// 配方 JSON: [{ name, amount, unit }]
+  ingredients String   @default("[]")
+  /// 步骤 JSON: ["step1", "step2"]
+  steps        String   @default("[]")
+  /// 装饰
+  garnish     String?
+  /// 描述/故事
+  description String?
+  /// 标签逗号分隔: "summer,refreshing,party"
+  tags        String   @default("")
+  /// 封面图 URL（暂留空，M6 阶段接入图片）
+  image       String?
+  /// 是否经典预置
+  isClassic   Boolean  @default(true)
+  /// 是否公开（自定义酒单可设为私密）
+  isPublic    Boolean  @default(true)
+  /// 自定义归属用户（经典款为 null）
+  ownerId     String?
+  owner       User?    @relation("userCocktails", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isClassic])
+  @@index([ownerId])
+  @@map("cocktails")
+}
+
+/// 用户特调配方（含自动分析的四维评分）
+model CustomRecipe {
+  id          String   @id @default(cuid())
+  name        String
+  /// 配方 JSON: [{ name, amount, unit, role }]
+  ingredients String   @default("[]")
+  /// 步骤 JSON
+  steps       String   @default("[]")
+  /// 自动分析的甜酸苦烈
+  sweet       Int      @default(5)
+  sour        Int      @default(5)
+  bitter      Int      @default(5)
+  strong      Int      @default(5)
+  /// 备注
+  note        String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("custom_recipes")
+}
+
+/// 会员套餐
+model MemberPlan {
+  id           String  @id @default(cuid())
+  /// 套餐名
+  name         String
+  /// 等级：free / pro / svip
+  tier         String
+  /// 价格（分）
+  priceCents   Int
+  /// 有效期（天）
+  durationDays Int
+  /// 权益 JSON 字符串
+  benefits     String  @default("[]")
+  /// 排序
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+
+  orders Order[]
+
+  @@map("member_plans")
+}
+
+/// 订单（充值 / 开通会员）
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          MemberPlan @relation(fields: [planId], references: [id])
+  /// 金额（分）
+  amountCents   Int
+  /// 状态：pending / paid / failed / refunded
+  status        String   @default("pending")
+  /// 沙箱支付流水号（M5 阶段）
+  sandboxRef    String?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}

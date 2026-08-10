@@ -1,0 +1,38 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# 编译产物
+miniprogram/dist/
+server/dist/
+server/prisma/*.db
+server/prisma/*.db-journal
+server/dev.db
+server/prisma/migrations/dev.db*
+
+# 运行时文件
+server/server.out
+server/server.err
+
+# Taro 缓存
+miniprogram/.taro/
+miniprogram/.swc/
+
+# 测试脚本（临时）
+server/test-*.cjs
+server/verify-*.cjs
+
+# 生成的 Prisma Client
+server/prisma/generated/
+
+# 环境变量（敏感）
+server/.env
+miniprogram/.env
+
+# 系统
+Thumbs.db

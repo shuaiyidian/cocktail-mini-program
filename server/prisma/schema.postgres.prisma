@@ -1,0 +1,120 @@
+// Prisma schema - PostgreSQL (生产环境 / Railway)
+// 使用：DATABASE_URL="postgresql://..."  pnpm prisma db push --schema=./prisma/schema.postgres.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/postgres"  // 避免与 SQLite 客户端冲突
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 用户
+model User {
+  id              String    @id @default(cuid())
+  openid          String?   @unique
+  unionid         String?
+  nickname        String?
+  avatar          String?
+  /// 会员等级：free / pro / svip
+  memberTier      String    @default("free")
+  /// 会员到期时间
+  memberExpiresAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customCocktails Cocktail[]    @relation("userCocktails")
+  customRecipes   CustomRecipe[]
+  orders          Order[]
+
+  @@map("users")
+}
+
+/// 鸡尾酒
+model Cocktail {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  nameEn      String?
+  category    String   @default("classic")
+  glass       String?
+  sweet       Int      @default(5)
+  sour        Int      @default(5)
+  bitter      Int      @default(5)
+  strong      Int      @default(5)
+  ingredients String   @default("[]")
+  steps        String   @default("[]")
+  garnish     String?
+  description String?
+  tags        String   @default("")
+  image       String?
+  isClassic   Boolean  @default(true)
+  isPublic    Boolean  @default(true)
+  ownerId     String?
+  owner       User?    @relation("userCocktails", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isClassic])
+  @@index([ownerId])
+  @@map("cocktails")
+}
+
+/// 用户特调配方
+model CustomRecipe {
+  id          String   @id @default(cuid())
+  name        String
+  ingredients String   @default("[]")
+  steps       String   @default("[]")
+  sweet       Int      @default(5)
+  sour        Int      @default(5)
+  bitter      Int      @default(5)
+  strong      Int      @default(5)
+  note        String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("custom_recipes")
+}
+
+/// 会员套餐
+model MemberPlan {
+  id           String  @id @default(cuid())
+  name         String
+  tier         String
+  priceCents   Int
+  durationDays Int
+  benefits     String  @default("[]")
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+
+  orders Order[]
+
+  @@map("member_plans")
+}
+
+/// 订单
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          MemberPlan @relation(fields: [planId], references: [id])
+  amountCents   Int
+  status        String   @default("pending")
+  sandboxRef    String?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}

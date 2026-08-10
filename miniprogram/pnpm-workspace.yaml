@@ -1,0 +1,15 @@
+packages:
+  - .
+
+# 允许以下包执行 postinstall
+allowBuilds:
+  esbuild: true
+  "@swc/core": true
+  "@tarojs/binding": true
+  "@parcel/watcher": true
+  "core-js": true
+  "core-js-pure": true
+  "@babel/core": true
+
+# 关闭 build 前自动跑 install
+verifyDepsBeforeRun: false
