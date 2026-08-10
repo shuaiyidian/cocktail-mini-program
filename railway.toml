@@ -1,12 +1,8 @@
 # Railway 部署配置（项目根目录）
-# Start 命令用 nixpacks.toml 的 [start] section
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd server && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@8.15.9 build"
-
-[deploy]
-healthcheckPath = "/api/health"
-healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+# 关键：@prisma/client postinstall 会用默认 schema.prisma 跑 prisma generate
+# 我们先把 postgres schema 复制为默认 schema，让 client 生成 postgres 版本
+# build 完再还原为 SQLite schema（不影响本地 dev）
+buildCommand = "cd server && mv prisma/schema.prisma prisma/schema.sqlite.prisma && cp prisma/schema.postgres.prisma prisma/schema.prisma && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate && npx -y pnpm@8.15.9 build && mv prisma/schema.sqlite.prisma prisma/schema.prisma"
