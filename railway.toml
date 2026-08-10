@@ -2,8 +2,8 @@
 
 [build]
 builder = "NIXPACKS"
-# npx pnpm@10 走 npm 的 bin 目录
-buildCommand = "cd server && npx -y pnpm@10 install --frozen-lockfile && npx -y pnpm@10 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@10 build"
+# pnpm@9 兼容老版 Node.js（不依赖 styleText）
+buildCommand = "cd server && npx -y pnpm@9.15.4 install --frozen-lockfile && npx -y pnpm@9.15.4 prisma generate --schema=./prisma/schema.postgres.prisma && npx -y pnpm@9.15.4 build"
 
 [deploy]
 healthcheckPath = "/api/health"
