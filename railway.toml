@@ -2,5 +2,5 @@
 
 [build]
 builder = "NIXPACKS"
-# build 阶段没有真 DATABASE_URL，用占位让 prisma generate 验证通过
-buildCommand = "cd server && export DATABASE_URL=\"postgresql://placeholder:placeholder@localhost:5432/placeholder\" && mv prisma/schema.prisma prisma/schema.sqlite.prisma && cp prisma/schema.postgres.prisma prisma/schema.prisma && npx -y pnpm@8.15.9 install --no-frozen-lockfile && npx -y pnpm@8.15.9 prisma generate && npx -y pnpm@8.15.9 build && mv prisma/schema.sqlite.prisma prisma/schema.prisma"
+# 用 env 命令显式传递 DATABASE_URL 给每个 npx 子进程
+buildCommand = "cd server && mv prisma/schema.prisma prisma/schema.sqlite.prisma && cp prisma/schema.postgres.prisma prisma/schema.prisma && env DATABASE_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder' npx -y pnpm@8.15.9 install --no-frozen-lockfile && env DATABASE_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder' npx -y pnpm@8.15.9 prisma generate && env DATABASE_URL='postgresql://placeholder:placeholder@localhost:5432/placeholder' npx -y pnpm@8.15.9 build && mv prisma/schema.sqlite.prisma prisma/schema.prisma"
