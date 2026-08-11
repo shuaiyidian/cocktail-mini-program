@@ -1,0 +1,46 @@
+# Render.com 部署配置（项目根目录）
+# 用法：Render 控制台 → New → Blueprint → 选这个仓库 → 自动按本文件创建 Web Service + PostgreSQL
+# 文档：https://render.com/docs/blueprint-spec
+
+services:
+  # ===== PostgreSQL 数据库 =====
+  - type: pserv
+    name: cocktail-db
+    plan: free                   # 免费 90 天
+    databaseName: cocktail
+    user: cocktail
+    ipAllowList: []              # 允许所有 IP（Web Service 自动连）
+    region: oregon               # 美国西部机房（免费层可用）
+
+  # ===== Node.js Web Service =====
+  - type: web
+    name: cocktail-server
+    runtime: node
+    plan: free
+    rootDir: server              # 关键：告诉 Render 在 server/ 目录
+    region: oregon
+    # Build 阶段
+    buildCommand: |
+      npm install -g pnpm@8.15.9 &&
+      pnpm install --no-frozen-lockfile &&
+      env DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder pnpm prisma generate --schema=./prisma/schema.postgres.prisma &&
+      pnpm build
+    # 启动阶段（DATABASE_URL 已被 Render 注入为真值）
+    startCommand: |
+      pnpm prisma db push --accept-data-loss --schema=./prisma/schema.postgres.prisma &&
+      node dist/server.js
+    # 健康检查
+    healthCheckPath: /api/health
+    autoDeploy: true
+    # 环境变量
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true       # Render 自动生成随机值
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cocktail-db
+          property: connectionString

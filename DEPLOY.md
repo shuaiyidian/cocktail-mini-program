@@ -2,152 +2,106 @@
 
 ## 目录
 
-- [后端部署（Railway）](#后端部署railway)
-- [数据库切换（SQLite → PostgreSQL）](#数据库切换sqlite--postgresql)
-- [微信小程序发布](#微信小程序发布)
+- [Render.com 部署（推荐，免费）](#rendercom-部署推荐免费)
+- [Railway 部署（备选，付费）](#railway-部署备选付费)
+- [小程序发布](#小程序发布)
 - [真实微信支付接入](#真实微信支付接入)
 - [运维与监控](#运维与监控)
 
 ---
 
-## 后端部署（Railway）
+## Render.com 部署（推荐，免费）
 
-### 1. 准备工作
+### 优势
 
-- GitHub 仓库（推荐）
-- Railway 账号：https://railway.app/
-- 微信小程序 AppID + AppSecret
+- ✅ 免费层支持 **Web Service + PostgreSQL（90 天）**
+- ✅ 自动 HTTPS、域名分配
+- ✅ 不用信用卡（注册时不需要，部署时也不需要）
+- ✅ 跟 GitHub 集成，push 自动部署
 
-### 2. 创建项目
+### 一键部署
 
-```bash
-# 安装 Railway CLI（可选）
-npm i -g @railway/cli
+#### 1. 注册 Render
 
-# 登录
-railway login
+打开 **https://render.com/** → Sign up with GitHub → 授权访问你的仓库
 
-# 在 server 目录下初始化
-cd server
-railway init
+#### 2. 创建 Blueprint
+
+1. Dashboard 右上 → **New** → **Blueprint**
+2. Connect repository → 选 `shuaiyidian/cocktail-mini-program`
+3. Render 自动检测到根目录的 `render.yaml` → 显示两个服务：
+   - `cocktail-db` (PostgreSQL)
+   - `cocktail-server` (Web Service)
+4. 点 **Apply** → 等 5-10 分钟部署完成
+
+#### 3. 拿到 URL
+
+部署成功后你的服务类似：
+
+```
+https://cocktail-server-xxxx.onrender.com
 ```
 
-或在 Railway 控制台：
-1. New Project → Deploy from GitHub repo → 选你的仓库
-2. Root Directory 设为 `server`
-3. Railway 自动识别 Node.js + pnpm
+打开浏览器访问：
+- `https://cocktail-server-xxxx.onrender.com/api/health` → `{"status":"ok"}`
+- `https://cocktail-server-xxxx.onrender.com/api/health/deep` → `{"db":"connected"}`
 
-### 3. 添加 PostgreSQL
+#### 4. 触发种子数据（可选）
 
-在 Railway 项目里：
-1. New → Database → PostgreSQL
-2. 创建后自动注入 `DATABASE_URL` 到环境变量
+服务起后数据库是空的（只 push 了 schema）。需要灌经典鸡尾酒数据：
 
-### 4. 切换数据库 Schema
+**方法 A：本地连接到 Render PG 跑 seed**
 
-Prisma 不支持一个 schema 多 provider，需要分两步：
-
-```bash
-# 在本地先确认生产 schema 没问题
-DATABASE_URL="postgresql://..." pnpm prisma db push --schema=./prisma/schema.postgres.prisma
-DATABASE_URL="postgresql://..." pnpm prisma generate --schema=./prisma/schema.postgres.prisma
-```
-
-或者用 `railway run` 在 Railway 容器里执行：
-
-```bash
-railway run pnpm prisma db push --schema=./prisma/schema.postgres.prisma
-railway run pnpm prisma:seed
-```
-
-### 5. 配置环境变量（Railway Variables）
-
-| 变量 | 说明 | 示例 |
-|---|---|---|
-| `DATABASE_URL` | Railway 自动注入 | `postgresql://...` |
-| `JWT_SECRET` | JWT 签名密钥（生产用强随机） | `openssl rand -base64 32` |
-| `JWT_EXPIRES_IN` | Token 过期时间 | `30d` |
-| `WX_APPID` | 微信 AppID | `wxabc123...` |
-| `WX_SECRET` | 微信 AppSecret | `abcdef...` |
-| `CORS_ORIGIN` | CORS 白名单 | `*` 或 `https://...` |
-| `NODE_ENV` | 运行环境 | `production` |
-| `PORT` | 监听端口（Railway 自动） | 3000 |
-
-### 6. 部署
-
-```bash
-git push origin main
-# Railway 自动 build + deploy
-```
-
-或者：
-```bash
-railway up
-```
-
-### 7. 验证
-
-```bash
-# Railway 会分配一个域名，类似 https://cocktail-server-production.up.railway.app
-curl https://your-app.up.railway.app/api/health
-# 期望: {"status":"ok",...}
-
-curl https://your-app.up.railway.app/api/health/deep
-# 期望: {"status":"ok","db":"connected",...}
-```
-
-### 部署失败排查
-
-| 现象 | 排查 |
-|---|---|
-| `prisma generate` 失败 | 确认 DATABASE_URL 已设置 + pnpm 已安装 |
-| `db push` 失败 | 看 Railway logs，通常是 schema 不兼容 |
-| 健康检查 503 | DB 连接问题，看 `health/deep` 输出 |
-| 502/503 | 看 Railway logs → Deploy |
-
----
-
-## 数据库切换（SQLite → PostgreSQL）
-
-开发期用 SQLite 方便，生产期换 PostgreSQL（Railway 一键创建）。
-
-### 步骤
-
-1. **创建 PostgreSQL schema 文件**（已包含在 `prisma/schema.postgres.prisma`）
-
-2. **本地测试切换**（可选）：
-   ```bash
-   # 在 .env 里临时改 DATABASE_URL
-   DATABASE_URL="postgresql://user:pass@localhost:5432/cocktail"
-   
-   pnpm prisma db push --schema=./prisma/schema.postgres.prisma
+1. Render Dashboard → `cocktail-db` → Connection → 复制 `External Database URL`
+2. 本地：
+   ```powershell
+   cd D:/AI/minimax/program/cocktail-mini-program/server
+   $env:DATABASE_URL = "postgresql://cocktail:xxxxx@xxx/.../cocktail"
    pnpm prisma:seed
-   pnpm dev  # 测试
    ```
 
-3. **生产环境**：
-   ```bash
-   # Railway 上设 DATABASE_URL
-   # 部署后会自动跑 prisma db push + seed（见 railway.toml）
-   ```
+**方法 B：临时启动一个 SSH 任务**
 
-### Schema 差异
+Render 免费 Web Service 不支持 SSH。免费 PG 实例可以装 `psql` 客户端连。
 
-| 项 | SQLite | PostgreSQL |
-|---|---|---|
-| Provider | `sqlite` | `postgresql` |
-| `String` 字段 | TEXT | varchar/text |
-| `Int` 字段 | INTEGER | integer |
-| `Boolean` | 0/1 | bool |
-| `Json` 字段 | 不支持，用 String | 支持 jsonb |
-| `DateTime` | TEXT (ISO 8601) | timestamp |
-| 默认值 | 不支持函数 | 支持 `now()` |
+### 注意事项
 
-我们 schema 故意保持简单（JSON 都用 String），切换时只需改 `provider`。
+| 项 | 限制 |
+|---|---|
+| Web Service 免费 | 750 小时/月、15 分钟无流量自动休眠（冷启动 ~30s） |
+| PostgreSQL 免费 | 90 天，到期后要付费或迁移 |
+| 冷启动 | 免费版不访问会休眠，再次访问会唤醒（30 秒延迟） |
+
+### 解决冷启动
+
+免费版 15 分钟无流量会休眠。生产环境建议：
+- 升级到 Starter Plan（$7/月）：不休眠
+- 或者用 [cron-job.org](https://cron-job.org) 每 10 分钟 ping 一次 `/api/health` 保持活跃
 
 ---
 
-## 微信小程序发布
+## Railway 部署（备选，付费）
+
+Railway **免费版** 资源耗尽后无法创建 PostgreSQL，需要升级 Hobby Plan（$5/月）。已经写好 `railway.toml`，付费版用户可以直接用。
+
+### Railway 部署步骤
+
+1. Railway 控制台 → 项目 → New Service → GitHub Repo
+2. Root Directory 设为 `server`
+3. 添加 PostgreSQL：New → Database → PostgreSQL（自动注入 DATABASE_URL）
+4. 设置环境变量：
+   - `JWT_SECRET`：随便一串强密码
+   - `CORS_ORIGIN=*`
+5. Deploy
+
+### Railway 配置文件
+
+- 根目录 `railway.toml`：build/start 命令
+- 根目录 `nixpacks.toml`：Nixpacks 阶段配置
+
+---
+
+## 小程序发布
 
 ### 1. 准备工作
 
@@ -177,9 +131,9 @@ curl https://your-app.up.railway.app/api/health/deep
 
 小程序要求后端必须 HTTPS（不能 HTTP）。
 
-1. Railway 默认带 HTTPS，域名类似 `https://xxx.up.railway.app`
+1. Render 默认带 HTTPS，域名类似 `https://cocktail-server-xxxx.onrender.com`
 2. 在微信公众平台 → 开发管理 → 开发设置 → 服务器域名：
-   - request 合法域名：`https://xxx.up.railway.app`
+   - request 合法域名：`https://cocktail-server-xxxx.onrender.com`
    - uploadFile 合法域名：同上（如需）
    - downloadFile 合法域名：同上
 
@@ -187,7 +141,7 @@ curl https://your-app.up.railway.app/api/health/deep
 
 ```bash
 # 1. 启动后端（确保 HTTPS 域名已配好）
-cd server && pnpm dev  # 或 Railway 部署
+cd server && pnpm dev  # 或 Render 部署
 
 # 2. 编译小程序
 cd miniprogram && pnpm build:weapp
@@ -214,14 +168,6 @@ cd miniprogram && pnpm build:weapp
 - ✅ 内容不能违规（酒类需注意"未成年人禁止"提示）
 - ✅ 类目要选对（效率/工具类，含酒类内容）
 - ✅ 测试账号要提供（审核员能登录体验完整流程）
-
-### 8. 体验版 / 正式版差异
-
-| 项 | 体验版 | 正式版 |
-|---|---|---|
-| 谁能进 | 白名单开发者 | 所有用户 |
-| 域名校验 | 关闭 | 开启 |
-| 支付 | 沙箱 | 真实（需商户号） |
 
 ---
 
@@ -307,16 +253,11 @@ curl https://your-app/api/metrics
 - `/api/health` - 轻量级（200ms 内返回）
 - `/api/health/deep` - 验证 DB 连接
 
-Railway 会自动用 `/api/health` 做健康检查，失败会自动重启。
+Render 会自动用 `/api/health` 做健康检查，失败会自动重启。
 
 ### 日志
 
-Railway 控制台 → 选服务 → Logs，实时查看 stdout/stderr。
-
-关键日志：
-- `[event] type=xxx client=xxx data=xxx` - 埋点
-- `[error] xxx` - 错误
-- `[uncaughtException] xxx` - 未捕获异常
+Render 控制台 → 选服务 → Logs，实时查看 stdout/stderr。
 
 ### 异常告警
 
@@ -330,7 +271,7 @@ pnpm add @sentry/node
 
 ### 性能监控
 
-简单方法：Railway 控制台 → Metrics 看 CPU/内存/网络。
+简单方法：Render 控制台 → Metrics 看 CPU/内存/网络。
 
 进阶：接 New Relic / Datadog。
 
@@ -341,14 +282,14 @@ pnpm add @sentry/node
 **Q: 小程序白名单里没配域名能直接调本地后端吗？**
 A: 开发期可以，但要在微信开发者工具「详情 → 本地设置」勾上「不校验合法域名」。生产期必须配 HTTPS + 白名单。
 
-**Q: Railway 免费额度够用吗？**
-A: 免费 500 小时/月 + 5GB 流量。早期够用，用户多了升级 Pro（$5/月起）。
-
-**Q: 数据库选 PostgreSQL 还是继续用 SQLite？**
-A: 多人用必上 PG。SQLite 适合本地 demo。
+**Q: Render 免费版的 90 天 PG 过期了怎么办？**
+A: 三个选择：① 升级 Render 付费 plan（$7/月起含 PG）；② 迁移到 Neon/Supabase 免费 PG；③ 用 Upstash Redis 替代部分功能。
 
 **Q: 沙箱支付能不能直接上线？**
 A: 不能，沙箱只是测试用。真实上线必须接微信支付（需要商户号）。
 
 **Q: JWT token 怎么续期？**
 A: 30 天后过期，用户重新登录。可以加 refresh token 机制（不在当前 MVP 范围）。
+
+**Q: Render 冷启动慢怎么办？**
+A: 免费版 15 分钟无流量会休眠。可用 cron-job.org 每 10 分钟 ping 一次保持活跃。
