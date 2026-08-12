@@ -1,0 +1,40 @@
+{
+  "version": "2.0",
+  "envId": "your-cloudbase-env-id-here",
+  "_comment": "把 envId 改成你的云开发环境 ID（在微信开发者工具 → 云开发 → 设置可看到）",
+  "framework": {
+    "name": "express",
+    "runtime": "Nodejs20",
+    "plugins": {
+      "tcb": {
+        "use": "@cloudbase/framework-plugin-container",
+        "inputs": {
+          "serviceName": "cocktail-server",
+          "servicePath": "/",
+          "containerPort": 8080,
+          "envType": "nodejs20",
+          "buildCommand": "echo 'Docker build via cloud base'",
+          "dockerfilePath": "./Dockerfile",
+          "envVariables": [
+            {
+              "key": "NODE_ENV",
+              "value": "production"
+            },
+            {
+              "key": "JWT_SECRET",
+              "value": "change-me-in-cloudbase-console"
+            },
+            {
+              "key": "CORS_ORIGIN",
+              "value": "*"
+            },
+            {
+              "key": "PORT",
+              "value": "8080"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
